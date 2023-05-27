@@ -1,0 +1,23 @@
+{
+  "name": "proquiz",
+  "version": "1.0.0",
+  "description": "Sample Readme",
+  "main": "server.js",
+  "scripts": {
+    "test": "nodemon server",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srdevanarayan/ProQuiz.git"
+  },
+  "author": "S R Devanarayan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/srdevanarayan/ProQuiz/issues"
+  },
+  "homepage": "https://github.com/srdevanarayan/ProQuiz#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

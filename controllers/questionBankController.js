@@ -248,7 +248,7 @@ const getQuestions = async (req, res) => {
     { $skip: pageSize * (pageNumber - 1) },
     { $limit: pageSize }
   );
-  console.log(filterArray);
+  //console.log(filterArray);
   const result = await QB.aggregate(filterArray).exec();
   res.status(200).json(result);
 };

@@ -10,21 +10,27 @@ const handleRefreshToken = async (req, res) => {
   const foundUser = await User.findOne({ refreshToken }).exec();
   if (!foundUser) return res.sendStatus(403); //Forbidden
   // evaluate jwt
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-    if (err || foundUser.user !== decoded.user) return res.sendStatus(403);
-    const roles = Object.values(foundUser.roles);
-    const accessToken = jwt.sign(
-      {
-        UserInfo: {
-          user: decoded.user,
-          roles: roles,
+  //console.log(process.env.RSA_PUBLIC_KEY.replace(/\\n/gm, "\n"));
+  jwt.verify(
+    refreshToken,
+    process.env.RSA_PUBLIC_KEY.replace(/\\n/gm, "\n"),
+    { algorithm: ["RS256"] },
+    (err, decoded) => {
+      if (err || foundUser.user !== decoded.user) return res.sendStatus(403);
+      const roles = Object.values(foundUser.roles);
+      const accessToken = jwt.sign(
+        {
+          UserInfo: {
+            user: decoded.user,
+            roles: roles,
+          },
         },
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "3h" }
-    );
-    res.json({ roles, accessToken });
-  });
+        process.env.RSA_PRIVATE_KEY.replace(/\\n/gm, "\n"),
+        { expiresIn: "3h", algorithm: "RS256" }
+      );
+      res.json({ roles, accessToken });
+    }
+  );
 };
 
 module.exports = { handleRefreshToken };

@@ -18,6 +18,7 @@ const handleLogin = async (req, res) => {
   if (match) {
     const roles = Object.values(foundUser.roles).filter(Boolean);
     // create JWTs
+    //console.log(process.env.RSA_PRIVATE_KEY.replace(/\\\\n/g, "\\n"));
     const accessToken = jwt.sign(
       {
         UserInfo: {
@@ -25,13 +26,13 @@ const handleLogin = async (req, res) => {
           roles: roles,
         },
       },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "3h" }
+      process.env.RSA_PRIVATE_KEY.replace(/\\n/gm, "\n"),
+      { expiresIn: "3h", algorithm: "RS256" }
     );
     const refreshToken = jwt.sign(
       { user: foundUser.user },
-      process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "3d" }
+      process.env.RSA_PRIVATE_KEY.replace(/\\n/gm, "\n"),
+      { expiresIn: "3d", algorithm: "RS256" }
     );
     // Saving refreshToken with current user
     foundUser.refreshToken = refreshToken;

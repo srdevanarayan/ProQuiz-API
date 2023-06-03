@@ -6,7 +6,15 @@ const sendOtp = async (req, res) => {
   if (!foundUser) return res.status(401).json({ message: "User not found" });
   if (foundUser.status === "verified" && !req.body.pwdchange)
     return res.status(422).json({ message: "User already verified" });
-
+  const foundOtpRequest = await EmailVerification.findOne({
+    user: req.params.user,
+  }).exec();
+  if (foundOtpRequest)
+    return res
+      .status(400)
+      .json({
+        message: "OTP already requested. Wait for 3 mins before trying again",
+      });
   try {
     await EmailVerification.deleteMany({ user: req.params.user });
   } catch (err) {

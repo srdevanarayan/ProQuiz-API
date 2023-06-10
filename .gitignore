@@ -4,6 +4,5 @@ logs
 employee.js
 users.js
 Employee.js
-User.js
 employeesController.js
 usersController.js

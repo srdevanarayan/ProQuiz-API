@@ -18,7 +18,6 @@ connectDB();
 
 // custom middleware logger
 //app.use(logger);
-
 // Handle options credentials check - before CORS!
 // and fetch cookies credentials requirement
 app.use(credentials);
@@ -50,15 +49,17 @@ app.use("/resetpassword", require("./routes/resetPassword"));
 
 app.use(verifyJWT);
 app.use("/roles", require("./routes/roles"));
+app.use("/stats", require("./routes/stats"));
+app.use("/answers", require("./routes/api/answers"));
 app.use("/changename", require("./routes/api/changename"));
 app.use("/approveexperts", require("./routes/approveExperts"));
 app.use("/qb", require("./routes/api/questionBank"));
+app.use("/question", require("./routes/api/question"));
+app.use("/quiz", require("./routes/api/quiz"));
 
 app.all("*", (req, res) => {
   res.status(404);
-  if (req.accepts("html")) {
-    res.sendFile(path.join(__dirname, "views", "404.html"));
-  } else if (req.accepts("json")) {
+  if (req.accepts("json")) {
     res.json({ error: "404 Not Found" });
   } else {
     res.type("txt").send("404 Not Found");

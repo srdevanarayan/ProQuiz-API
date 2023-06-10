@@ -43,6 +43,9 @@ const addQuestion = async (req, res) => {
       qid: result._id,
       answer: req.body.answer,
     });
+    const findUser = await User.findOne({ user: req.user }).exec();
+    findUser.contributed.push(result._id);
+    await findUser.save();
     res.status(201).json({ message: "Question added successfully" });
   } catch (err) {
     console.error(err);
@@ -101,6 +104,11 @@ const removeQuestion = async (req, res) => {
   const findAnswerKey = await answerKey.findOne({ qid: qid }).exec();
   await findQuestion.deleteOne();
   await findAnswerKey.deleteOne();
+  await User.updateOne(
+    { user: req.user },
+    { $pull: { contributed: qid } }
+  ).exec();
+  await User.updateMany({}, { $pull: { verified: qid } }).exec();
   res.status(200).json({ message: "Question deleted successfully" });
 };
 
@@ -149,6 +157,29 @@ const verifyQuestion = async (req, res) => {
   findUser.verified.push(req.body.qid);
   await findUser.save();
   res.status(200).json({ message: "Question verified successfully!" });
+};
+const unVerifyQuestion = async (req, res) => {
+  if (!req?.body?.qid)
+    return res
+      .status(400)
+      .json({ message: "Please include neccessary parameters" });
+  const qid = req.body.qid;
+  if (!req.body.qid.match(/^[0-9a-fA-F]{24}$/)) {
+    return res.status(404).json({ message: "Question not found, invalid ID" });
+  }
+  const findQuestion = await QB.findOne({ _id: qid }).exec();
+  if (!findQuestion)
+    return res.status(404).json({ message: "Question not found" });
+  const findUser = await User.findOne({ user: req.user }).exec();
+  if (!findUser.verified.includes(req.body.qid))
+    return res
+      .status(409)
+      .json({ message: "You haven't verified this question!" });
+  findQuestion.verified = findQuestion.verified - 1;
+  await findQuestion.save();
+  findUser.verified.pull(req.body.qid);
+  await findUser.save();
+  res.status(200).json({ message: "Question unverified successfully!" });
 };
 
 const editQuestion = async (req, res) => {
@@ -202,6 +233,7 @@ const editQuestion = async (req, res) => {
   }
   await findQuestion.save();
   res.status(200).json({ message: "Question edited successfully" });
+  await User.updateMany({}, { $pull: { verified: qid } }).exec();
 };
 
 const getQuestions = async (req, res) => {
@@ -242,6 +274,23 @@ const getQuestions = async (req, res) => {
     });
     matchObject._id = { $in: includeArray };
   }
+  if (req.body?.option && req.body.option === "verified") {
+    const getUser = await User.findOne({ user: req.user });
+    getUser.verified.forEach((element) => {
+      includeArray.push(mongoose.Types.ObjectId(element));
+    });
+    matchObject._id = { $in: includeArray };
+  }
+  if (req.body?.option && req.body.option === "unverified") {
+    const getUser = await User.findOne({ user: req.user });
+    getUser.verified.forEach((element) => {
+      includeArray.push(mongoose.Types.ObjectId(element));
+    });
+    matchObject._id = { $nin: includeArray };
+  }
+  if (req.body?.option && req.body.option === "contributed") {
+    matchObject.creator = req.user;
+  }
   if (!isObjectEmpty(matchObject)) filterArray.push({ $match: matchObject });
   filterArray.push({ $sort: sortObject });
   filterArray.push(
@@ -250,6 +299,16 @@ const getQuestions = async (req, res) => {
   );
   //console.log(filterArray);
   const result = await QB.aggregate(filterArray).exec();
+  //console.log(result);
+  if (req.body?.getanswer && req.body.getanswer === "true") {
+    for (const question of result) {
+      const getAnswerDocument = await answerKey
+        .findOne({ qid: question._id })
+        .exec();
+      const answerValue = getAnswerDocument.answer;
+      question.answer = answerValue;
+    }
+  }
   res.status(200).json(result);
 };
 
@@ -277,4 +336,5 @@ module.exports = {
   getQuestions,
   getCategories,
   getSubCategories,
+  unVerifyQuestion,
 };

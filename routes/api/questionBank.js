@@ -18,5 +18,10 @@ router.put(
   verifyRoles(ROLES_LIST.Expert),
   questionBankController.verifyQuestion
 );
+router.put(
+  "/unverify",
+  verifyRoles(ROLES_LIST.Expert),
+  questionBankController.unVerifyQuestion
+);
 
 module.exports = router;

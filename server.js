@@ -51,7 +51,7 @@ app.use(verifyJWT);
 app.use("/roles", require("./routes/roles"));
 app.use("/stats", require("./routes/stats"));
 app.use("/answers", require("./routes/api/answers"));
-app.use("/changename", require("./routes/api/changename"));
+app.use("/changename", require("./routes/api/changeName"));
 app.use("/approveexperts", require("./routes/approveExperts"));
 app.use("/qb", require("./routes/api/questionBank"));
 app.use("/question", require("./routes/api/question"));

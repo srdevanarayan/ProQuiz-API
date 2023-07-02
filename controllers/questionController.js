@@ -1,7 +1,7 @@
 const question = require("../model/QuizQuestion");
 const QuizAnswerKey = require("../model/QuizAnswerKey");
 const answerKey = require("../model/AnswerKey");
-const Quiz = require("../model/quiz");
+const Quiz = require("../model/Quiz");
 const QB = require("../model/questionBank");
 const User = require("../model/User");
 

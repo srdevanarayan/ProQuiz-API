@@ -9,8 +9,6 @@ const verify = async (req, res) => {
       message: `User not found: ${req.params.user}. Retry.`,
     });
   }
-  //console.log(userEmailOTP.user);
-  //console.log(userEmailOTP.otp);
   if (userEmailOTP.otp !== req.params.otp)
     return res.status(401).json({
       message: `OTP for user: ${req.params.user} doesn't match. Enter otp again.`,

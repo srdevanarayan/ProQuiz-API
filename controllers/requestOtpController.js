@@ -10,11 +10,9 @@ const sendOtp = async (req, res) => {
     user: req.params.user,
   }).exec();
   if (foundOtpRequest)
-    return res
-      .status(400)
-      .json({
-        message: "OTP already requested. Wait for 3 mins before trying again",
-      });
+    return res.status(400).json({
+      message: "OTP already requested. Wait for 3 mins before trying again",
+    });
   try {
     await EmailVerification.deleteMany({ user: req.params.user });
   } catch (err) {
@@ -23,9 +21,12 @@ const sendOtp = async (req, res) => {
   }
 
   const otp = Math.floor(Math.random() * (100000 - 999999 + 1) + 999999);
-  const text = req.body.pwdchange
-    ? `OTP for verifying your account is ${otp}. This is only valid for 3 minutes.`
-    : `OTP for resetting your password is ${otp}. This is only valid for 3 minutes.`;
+  let text;
+  if (req.body.pwdchange) {
+    text = `OTP for resetting your password is ${otp}. This is only valid for 3 minutes.`;
+  } else {
+    text = `OTP for verifying your account is ${otp}. This is only valid for 3 minutes.`;
+  }
   try {
     const result = await EmailVerification.create({
       user: req.params.user,

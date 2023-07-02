@@ -43,9 +43,7 @@ const createQuiz = async (req, res) => {
   if (req?.body?.timer && isNaN(req.body.timer) === false)
     quizCreated.timer = req.body.timer;
   await quizCreated.save();
-  res
-    .status(201)
-    .json({ message: `Quiz created successfully with code: ${uniqueCode} ` });
+  res.status(201).json({ quizid: quizCreated._id });
 };
 
 const editQuiz = async (req, res) => {
@@ -85,7 +83,7 @@ const editQuiz = async (req, res) => {
   }
   if (approvalrequired !== undefined) {
     if (quiz.approvalrequired !== approvalrequired) {
-      if (approvalrequired !== "true" && approvalrequired !== "false") {
+      if (approvalrequired !== true && approvalrequired !== false) {
         return res
           .status(400)
           .json({ message: "Approval required value is not a boolean" });
@@ -153,7 +151,6 @@ const deleteQuiz = async (req, res) => {
 
   try {
     await User.updateMany(filter, update, options);
-    console.log("Values removed from all documents");
   } catch (err) {
     console.log(err);
   }
@@ -186,6 +183,7 @@ const copyQuiz = async (req, res) => {
   codeDocument.code = codeDocument.code + 1;
   await codeDocument.save();
   let quizCreated;
+  let questionsarray = [];
   try {
     quizCreated = await Quiz.create({
       name: quiz.name,
@@ -208,13 +206,15 @@ const copyQuiz = async (req, res) => {
         quizid: quizCreated._id,
         answer: findAnswer.answer,
       });
-      quizCreated.push(newQuestion._id);
+      questionsarray.push(newQuestion._id);
     }
+    quizCreated.questions = questionsarray;
     await quizCreated.save();
     await QuizApproval.create({
       quizid: quizCreated._id,
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).json(err);
   }
   const findUser = await User.findOne({ user: req.user });
@@ -265,6 +265,21 @@ const endQuiz = async (req, res) => {
     return res.status(409).json({ message: "Quiz already ended" });
   quiz.status = "ended";
   await quiz.save();
+  const filter = {
+    $or: [{ quiztobecompleted: quizid }],
+  };
+  const update = {
+    $pull: {
+      quiztobecompleted: quizid,
+    },
+  };
+  const options = { multi: true };
+
+  try {
+    await User.updateMany(filter, update, options);
+  } catch (err) {
+    console.log(err);
+  }
   res.status(200).json({ message: "Quiz ended" });
 };
 
@@ -393,6 +408,7 @@ const requestApproval = async (req, res) => {
   if (!quiz) {
     return res.status(404).json({ message: "Quiz not found" });
   }
+  console.log(quiz.approvalrequired);
   const findUser = await User.findOne({ user: req.user });
   if (findUser.customquizanswered.includes(quizid))
     return res
@@ -406,7 +422,7 @@ const requestApproval = async (req, res) => {
     return res
       .status(400)
       .json({ message: "You cannot request approval for your own quiz!" });
-  if (quiz.approvalrequired === "false") {
+  if (quiz.approvalrequired === false) {
     findUser.quiztobecompleted.push(quizid);
     await findUser.save();
     return res.status(200).json({ message: "Quiz added to pending list" });
@@ -459,10 +475,10 @@ const getQuizInfo = async (req, res) => {
   if (req.body.option === "customquizcreated") {
     let findQuizIds = findUser.customquizcreated;
     findQuizIds.reverse();
-    const startIndex = (pagenumber - 1) * pagesize;
+    /* const startIndex = (pagenumber - 1) * pagesize;
     const endIndex = pagenumber * pagesize;
     let slicedArray = findQuizIds.slice(startIndex, endIndex);
-    findQuizIds = slicedArray;
+    findQuizIds = slicedArray; */
     if (Array.isArray(findQuizIds) && findQuizIds.length === 0)
       return res
         .status(404)
@@ -470,16 +486,19 @@ const getQuizInfo = async (req, res) => {
     let response = { quizzes: [] };
     for (let item in findQuizIds) {
       let quizid = findQuizIds[item];
-      const findQuiz = await Quiz.findOne({ _id: quizid }).exec();
-      response.quizzes.push({
-        code: findQuiz.code,
-        type: findQuiz.type,
-        name: findQuiz.name,
-        status: findQuiz.status,
-        participants: findQuiz.participants,
-        responses: findQuiz.responses,
-        approvalrequired: findQuiz.approvalrequired,
-        createdAt: findQuiz.createdAt,
+      const findQuiz = await Quiz.find({ _id: quizid }).exec();
+      findQuiz.forEach((quiz) => {
+        response.quizzes.push({
+          quizid: quiz._id,
+          code: quiz.code,
+          type: quiz.type,
+          name: quiz.name,
+          status: quiz.status,
+          participants: quiz.participants,
+          responses: quiz.responses,
+          approvalrequired: quiz.approvalrequired,
+          createdAt: quiz.createdAt,
+        });
       });
     }
     return res.status(200).json(response);
@@ -499,12 +518,16 @@ const getQuizInfo = async (req, res) => {
     for (let item in findQuizIds) {
       let quizid = findQuizIds[item];
       const findQuiz = await Quiz.findOne({ _id: quizid }).exec();
-      response.quizzes.push({
-        code: findQuiz.code,
-        type: findQuiz.type,
-        name: findQuiz.name,
-        status: findQuiz.status,
-        createdAt: findQuiz.createdAt,
+      findQuiz.forEach((quiz) => {
+        response.quizzes.push({
+          quizid: quiz._id,
+          code: quiz.code,
+          type: quiz.type,
+          name: quiz.name,
+          status: quiz.status,
+          createdAt: quiz.createdAt,
+          approvalrequired: quiz.approvalrequired,
+        });
       });
     }
     return res.status(200).json(response);
@@ -523,13 +546,16 @@ const getQuizInfo = async (req, res) => {
     let response = { quizzes: [] };
     for (let item in findQuizIds) {
       let quizid = findQuizIds[item];
-      const findQuiz = await Quiz.findOne({ _id: quizid }).exec();
-      response.quizzes.push({
-        code: findQuiz.code,
-        type: findQuiz.type,
-        name: findQuiz.name,
-        status: findQuiz.status,
-        createdAt: findQuiz.createdAt,
+      const findQuiz = await Quiz.find({ _id: quizid }).exec();
+      findQuiz.forEach((quiz) => {
+        response.quizzes.push({
+          quizid: quiz._id,
+          code: quiz.code,
+          type: quiz.type,
+          name: quiz.name,
+          status: quiz.status,
+          createdAt: quiz.createdAt,
+        });
       });
     }
     return res.status(200).json(response);
@@ -548,13 +574,16 @@ const getQuizInfo = async (req, res) => {
     let response = { quizzes: [] };
     for (let item in findQuizIds) {
       let quizid = findQuizIds[item];
-      const findQuiz = await Quiz.findOne({ _id: quizid }).exec();
-      response.quizzes.push({
-        code: findQuiz.code,
-        type: findQuiz.type,
-        name: findQuiz.name,
-        status: findQuiz.status,
-        createdAt: findQuiz.createdAt,
+      const findQuiz = await Quiz.find({ _id: quizid }).exec();
+      findQuiz.forEach((quiz) => {
+        response.quizzes.push({
+          quizid: quiz._id,
+          code: quiz.code,
+          type: quiz.type,
+          name: quiz.name,
+          status: quiz.status,
+          createdAt: quiz.createdAt,
+        });
       });
     }
     return res.status(200).json(response);
@@ -573,13 +602,16 @@ const getQuizInfo = async (req, res) => {
     let response = { quizzes: [] };
     for (let item in findQuizIds) {
       let quizid = findQuizIds[item];
-      const findQuiz = await Quiz.findOne({ _id: quizid }).exec();
-      response.quizzes.push({
-        code: findQuiz.code,
-        type: findQuiz.type,
-        name: findQuiz.name,
-        status: findQuiz.status,
-        createdAt: findQuiz.createdAt,
+      const findQuiz = await Quiz.find({ _id: quizid }).exec();
+      findQuiz.forEach((quiz) => {
+        response.quizzes.push({
+          quizid: quiz._id,
+          code: quiz.code,
+          type: quiz.type,
+          name: quiz.name,
+          status: quiz.status,
+          createdAt: quiz.createdAt,
+        });
       });
     }
     return res.status(200).json(response);
@@ -670,7 +702,19 @@ const getQuizQuestionsAndAnswers = async (req, res) => {
     return res
       .status(403)
       .json({ message: "You are not the creator of this quiz" });
-  let response = { questions: [] };
+  let response = {
+    quizid: findQuiz._id,
+    code: findQuiz.code,
+    type: findQuiz.type,
+    name: findQuiz.name,
+    timer: findQuiz.timer,
+    status: findQuiz.status,
+    participants: findQuiz.participants,
+    responses: findQuiz.responses,
+    approvalrequired: findQuiz.approvalrequired,
+    createdAt: findQuiz.createdAt,
+    questions: [],
+  };
   const qidArray = findQuiz.questions;
   const findQuestions = await QuizQuestion.find({ _id: { $in: qidArray } });
   for (const question of findQuestions) {
@@ -678,6 +722,7 @@ const getQuizQuestionsAndAnswers = async (req, res) => {
       qid: question._id,
     }).exec();
     response.questions.push({
+      qid: question._id,
       question: question.question,
       options: question.options,
       answer: findAnswer.answer,
@@ -740,6 +785,8 @@ const initializeQuizSession = async (req, res) => {
       return res
         .status(403)
         .json({ message: "You cannot participate in this quiz" });
+    findQuizApproval.approved.pull(req.user);
+    await findQuizApproval.save();
   }
   if (findQuiz.status === "new")
     return res.status(403).json({ message: "Quiz has not started yet." });
@@ -758,8 +805,6 @@ const initializeQuizSession = async (req, res) => {
   await findUser.save();
   findResponse.starttime = Date();
   await findResponse.save();
-  findQuizApproval.approved.pull(req.user);
-  await findQuizApproval.save();
   findQuiz.responsesarray.push(req.user);
   findQuiz.responses = findQuiz.responses + 1;
   await findQuiz.save();
@@ -807,9 +852,12 @@ const submitAnswer = async (req, res) => {
       const findQuizApproval = await QuizApproval.findOne({
         quizid: quizid,
       }).exec();
-      findQuizApproval.approved.pull(req.user);
+      if (findQuizApproval) {
+        findQuizApproval.approved.pull(req.user);
+        await findQuizApproval.save();
+      }
     }
-    await findQuizApproval.save();
+
     findUser.quiztobecompleted.pull(quizid);
     if (findQuiz.type === "custom") findUser.customquizanswered.push(quizid);
     else if (findQuiz.type === "general")
@@ -819,9 +867,10 @@ const submitAnswer = async (req, res) => {
     await findResponse.save();
     findQuiz.responsesarray.push(req.user);
     findQuiz.responses = findQuiz.responses + 1;
+    findQuiz.participants = findQuiz.participants + 1;
     await findQuiz.save();
   }
-  if (findQuiz.timer) {
+  /* if (findQuiz.timer) {
     const date1 = new Date();
     const date2 = new Date(findResponse.starttime);
     const differenceInMilliseconds = date1.getTime() - date2.getTime();
@@ -829,7 +878,7 @@ const submitAnswer = async (req, res) => {
     if (differenceInSeconds > findQuiz.timer)
       return res.status(403).json({ message: "Quiz time is over" });
     console.log(differenceInSeconds);
-  }
+  } */
   if (findResponse.responses && findResponse.responses.get(qid))
     return res.status(400).json({ message: "Question already answered" });
   findResponse.responses.set(qid, req.body.answer);
@@ -918,16 +967,42 @@ const getParticipants = async (req, res) => {
       .json({ message: "Please specify what users to fetch" });
   let response = { users: [] };
   if (req.body.userclass === "responded") {
-    const findRespondedUsers = findQuiz.responsesarray;
+    const findRespondedUsers = [...new Set(findQuiz.responsesarray)];
+
     if (findRespondedUsers.length === 0)
       return res.status(404).json({ message: "No responded users found" });
     for (const user of findRespondedUsers) {
+      let score = 0;
       const foundUser = await User.findOne({ user: user });
+      const findResponse = await Response.findOne({
+        quiztaker: user,
+        quizid: quizid,
+      }).exec();
+      if (!findResponse)
+        return res.status(404).json({ message: "Response not found" });
+      const findQuestions = await QuizQuestion.find({
+        _id: { $in: findQuiz.questions },
+      }).exec();
+      score = findResponse.score;
+      if (findResponse.score === -99) {
+        for (const question of findQuestions) {
+          const findAnswer = await QuizAnswerKey.findOne({
+            qid: question._id,
+            quizid: quizid,
+          });
+          score = 0;
+          if (findAnswer.answer === findResponse.responses.get(question._id))
+            score = score + 1;
+        }
+      }
+
       response.users.push({
         user: user,
         name: foundUser.name,
+        score: score,
       });
     }
+
     return res.status(200).json(response);
   }
   const findApproval = await QuizApproval.findOne({ quizid: quizid });
@@ -942,6 +1017,7 @@ const getParticipants = async (req, res) => {
         name: foundUser.name,
       });
     }
+    response.approval = findApproval.status;
     return res.status(200).json(response);
   }
 
@@ -956,6 +1032,7 @@ const getParticipants = async (req, res) => {
         name: foundUser.name,
       });
     }
+    response.approval = findApproval.status;
     return res.status(200).json(response);
   }
   if (req.body.userclass === "blocked") {
@@ -969,6 +1046,7 @@ const getParticipants = async (req, res) => {
         name: foundUser.name,
       });
     }
+    response.approval = findApproval.status;
     return res.status(200).json(response);
   }
 };
@@ -1101,7 +1179,7 @@ const createGeneralQuiz = async (req, res) => {
     }
   }
   if (finalQids.length < parseInt(req.body.minimum))
-    return res.status(200).json({
+    return res.status(404).json({
       message: `Not enough questions above minimum limit. Easy:${easy}. Medium:${medium}. Hard:${hard}.`,
     });
   finalQids.sort(() => Math.random() - 0.5);
@@ -1152,6 +1230,49 @@ const createGeneralQuiz = async (req, res) => {
     message: `Quiz created successfully with ${easy} easy, ${medium} medium, ${hard} hard questions for ${category} ${subcategory}`,
   });
 };
+
+const getQuizStatus = async (req, res) => {
+  if (!req.body.quizid)
+    return res.status(400).json({ message: "Quiz id missing" });
+  const { quizid } = req.body;
+  if (!quizid.match(/^[0-9a-fA-F]{24}$/)) {
+    return res.status(404).json({ message: "Quiz not found, invalid ID" });
+  }
+  const findQuiz = await Quiz.findById(quizid);
+  if (!findQuiz) {
+    return res.status(404).json({ message: "Quiz not found" });
+  }
+  if (findQuiz.quizmaker === req.user && findQuiz.type === "custom")
+    return res
+      .status(404)
+      .json({ message: "You cannot participate in your own quiz!" });
+  const findUser = await User.findOne({ user: req.user });
+  if (!findUser.quiztobecompleted.includes(quizid))
+    return res
+      .status(404)
+      .json({ message: "You cannot participate in this quiz" });
+  if (findUser.generalquizanswered.includes(quizid))
+    return res
+      .status(443)
+      .json({ message: "You already participated in this general quiz!" });
+  if (findQuiz.approvalrequired === "true") {
+    const findQuizApproval = await QuizApproval.findOne({
+      quizid: quizid,
+    }).exec();
+    if (
+      findQuiz.type === "custom" &&
+      !findQuizApproval.approved.includes(req.user)
+    )
+      return res
+        .status(404)
+        .json({ message: "You cannot participate in this quiz" });
+  }
+  if (findQuiz.status === "new")
+    return res.status(404).json({ message: "Quiz has not started yet." });
+  if (findQuiz.status === "ended")
+    return res.status(404).json({ message: "Quiz ended." });
+  res.status(200).json({ message: "Quiz has started" });
+};
 module.exports = {
   createQuiz,
   editQuiz,
@@ -1170,4 +1291,5 @@ module.exports = {
   getResponses,
   getParticipants,
   createGeneralQuiz,
+  getQuizStatus,
 };

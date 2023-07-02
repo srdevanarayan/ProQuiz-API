@@ -164,9 +164,9 @@ const unVerifyQuestion = async (req, res) => {
       .status(400)
       .json({ message: "Please include neccessary parameters" });
   const qid = req.body.qid;
-  if (!req.body.qid.match(/^[0-9a-fA-F]{24}$/)) {
+  /*   if (!qid.match(/^[0-9a-fA-F]{24}$/)) {
     return res.status(404).json({ message: "Question not found, invalid ID" });
-  }
+  } */
   const findQuestion = await QB.findOne({ _id: qid }).exec();
   if (!findQuestion)
     return res.status(404).json({ message: "Question not found" });
@@ -252,6 +252,14 @@ const getQuestions = async (req, res) => {
   if (req.body?.subcategory) matchObject.subcategory = req.body.subcategory;
   if (req.body?.creator) matchObject.creator = req.body.creator;
   if (req.body?.difficulty) matchObject.difficulty = req.body.difficulty;
+  /* console.log(
+    req.body?.category,
+    req.body?.subcategory,
+    req.body.difficulty,
+    req.body.sortby,
+    req.body.pagesize,
+    req.body.pagenumber
+  ); */
   if (req.body?.sortby) {
     if (req.body.sortby === "created") {
       sortObject = {};
@@ -274,15 +282,14 @@ const getQuestions = async (req, res) => {
     });
     matchObject._id = { $in: includeArray };
   }
+  const getUser = await User.findOne({ user: req.user });
   if (req.body?.option && req.body.option === "verified") {
-    const getUser = await User.findOne({ user: req.user });
     getUser.verified.forEach((element) => {
       includeArray.push(mongoose.Types.ObjectId(element));
     });
     matchObject._id = { $in: includeArray };
   }
   if (req.body?.option && req.body.option === "unverified") {
-    const getUser = await User.findOne({ user: req.user });
     getUser.verified.forEach((element) => {
       includeArray.push(mongoose.Types.ObjectId(element));
     });
@@ -307,6 +314,13 @@ const getQuestions = async (req, res) => {
         .exec();
       const answerValue = getAnswerDocument.answer;
       question.answer = answerValue;
+      question.category = question.category;
+      getUser.reported.includes(question._id)
+        ? (question.reported = "true")
+        : (question.reported = "false");
+      getUser.rated.includes(question._id)
+        ? (question.rated = "true")
+        : (question.rated = "false");
     }
   }
   res.status(200).json(result);
@@ -326,6 +340,19 @@ const getSubCategories = async (req, res) => {
   res.status(200).json(subcategories);
 };
 
+const getCategoriesAndSubCategories = async (req, res) => {
+  const categories = await QB.distinct("category");
+  const categoryData = [];
+
+  for (let i = 0; i < categories.length; i++) {
+    const category = categories[i];
+    const subcategories = await QB.distinct("subcategory", { category });
+    categoryData.push({ category, subcategories });
+  }
+
+  res.status(200).json(categoryData);
+};
+
 module.exports = {
   addQuestion,
   rateQuestion,
@@ -337,4 +364,5 @@ module.exports = {
   getCategories,
   getSubCategories,
   unVerifyQuestion,
+  getCategoriesAndSubCategories,
 };

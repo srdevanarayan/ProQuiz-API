@@ -43,9 +43,7 @@ const addQuestion = async (req, res) => {
     });
     findQuiz.questions.push(result._id);
     await findQuiz.save();
-    return res
-      .status(201)
-      .json({ message: "Question bank question added to quiz successfully!" });
+    return res.status(201).json({ qid: result._id });
   }
   if (!req?.body?.answer || !req?.body?.options || !req?.body?.question)
     return res
@@ -66,7 +64,7 @@ const addQuestion = async (req, res) => {
     });
     findQuiz.questions.push(result._id);
     await findQuiz.save();
-    res.status(201).json({ message: "Question added to quiz successfully!" });
+    res.status(201).json({ qid: result._id });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);

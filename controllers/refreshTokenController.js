@@ -18,6 +18,7 @@ const handleRefreshToken = async (req, res) => {
     (err, decoded) => {
       if (err || foundUser.user !== decoded.user) return res.sendStatus(403);
       const roles = Object.values(foundUser.roles);
+      const user = Object.values(foundUser.user);
       const accessToken = jwt.sign(
         {
           UserInfo: {
@@ -28,7 +29,7 @@ const handleRefreshToken = async (req, res) => {
         process.env.RSA_PRIVATE_KEY.replace(/\\n/gm, "\n"),
         { expiresIn: "3h", algorithm: "RS256" }
       );
-      res.json({ roles, accessToken });
+      res.json({ user, roles, accessToken });
     }
   );
 };

@@ -1079,13 +1079,13 @@ const createGeneralQuiz = async (req, res) => {
   if (!history) {
     const history = await QBQuestionHistory.create({ quiztaker: req.user });
   }
-  if (!isNaN(req.body.easy)) {
+  if (!isNaN(req.body.easy) && req.body.easy !== "0") {
     let objectIds = [];
     if (req.body.avoidduplicate === "true") {
       const findHistory = await QBQuestionHistory.findOne({
         quiztaker: req.user,
       });
-      avoidQids = findHistory.qidhistory.get(easykey);
+      avoidQids = findHistory?.qidhistory?.get(easykey);
       if (avoidQids)
         objectIds = avoidQids.map((id) => mongoose.Types.ObjectId(id));
     }
@@ -1112,13 +1112,13 @@ const createGeneralQuiz = async (req, res) => {
       );
     }
   }
-  if (!isNaN(req.body.medium)) {
+  if (!isNaN(req.body.medium) && req.body.medium !== "0") {
     let objectIds = [];
     if (req.body.avoidduplicate === "true") {
       const findHistory = await QBQuestionHistory.findOne({
         quiztaker: req.user,
       });
-      avoidQids = findHistory.qidhistory.get(mediumkey);
+      avoidQids = findHistory?.qidhistory?.get(mediumkey);
       if (avoidQids)
         objectIds = avoidQids.map((id) => mongoose.Types.ObjectId(id));
     }
@@ -1145,13 +1145,13 @@ const createGeneralQuiz = async (req, res) => {
       );
     }
   }
-  if (!isNaN(req.body.hard)) {
+  if (!isNaN(req.body.hard) && req.body.hard !== "0") {
     let objectIds = [];
     if (req.body.avoidduplicate === "true") {
       const findHistory = await QBQuestionHistory.findOne({
         quiztaker: req.user,
       });
-      avoidQids = findHistory.qidhistory.get(hardkey);
+      avoidQids = findHistory?.qidhistory?.get(hardkey);
       if (avoidQids)
         objectIds = avoidQids.map((id) => mongoose.Types.ObjectId(id));
     }

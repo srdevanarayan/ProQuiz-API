@@ -1,4 +1,4 @@
-const User = require("../../model/User");
+const User = require("../model/User");
 const jwt = require("jsonwebtoken");
 
 const handleRefreshToken = async (req, res) => {
@@ -17,8 +17,8 @@ const handleRefreshToken = async (req, res) => {
     { algorithm: ["RS256"] },
     (err, decoded) => {
       if (err || foundUser.user !== decoded.user) return res.sendStatus(403);
-      const roles = foundUser.roles ? [foundUser.roles] : [];
-      const user = foundUser.user;
+      const roles = Object.values(foundUser.roles);
+      const user = Object.values(foundUser.user);
       const accessToken = jwt.sign(
         {
           UserInfo: {

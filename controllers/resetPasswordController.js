@@ -1,10 +1,9 @@
-const EmailVerification = require("../../model/EmailVerification");
-const User = require("../../model/User");
+const EmailVerification = require("../model/EmailVerification");
+const User = require("../model/User");
 const bcrypt = require("bcrypt");
 
 const handlePasswordChange = async (req, res) => {
   const { user, otp, pwd } = req.body;
-  //check for valid parameters
   if (!user || !otp || !pwd)
     return res
       .status(400)
@@ -15,7 +14,7 @@ const handlePasswordChange = async (req, res) => {
   }).exec();
   if (!userEmailOTP) {
     return res.status(401).json({
-      message: `OTP for user not found: ${user}. Retry.`,
+      message: `User not found: ${user}. Retry.`,
     });
   }
   //console.log(userEmailOTP.user);

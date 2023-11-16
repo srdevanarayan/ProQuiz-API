@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3500;
 connectDB();
 
 // custom middleware logger
-app.use(logger);
+//app.use(logger);
 // Handle options credentials check - before CORS!
 // and fetch cookies credentials requirement
 app.use(credentials);
@@ -38,19 +38,24 @@ app.use(cookieParser());
 //app.use("/", express.static(path.join(__dirname, "/public")));
 
 // routes
-//add routes which does not require authentication
-app.use("/register", require("./routes/authentication/register"));
-app.use("/auth", require("./routes/authentication/auth"));
-app.use("/verify", require("./routes/authentication/verifyEmail"));
-app.use("/requestotp", require("./routes/authentication/requestotp"));
-app.use("/refresh", require("./routes/authentication/refresh"));
-app.use("/logout", require("./routes/authentication/logout"));
-app.use("/resetpassword", require("./routes/authentication/resetPassword"));
+
+app.use("/register", require("./routes/register"));
+app.use("/auth", require("./routes/auth"));
+app.use("/verify", require("./routes/verifyEmail"));
+app.use("/requestotp", require("./routes/requestotp"));
+app.use("/refresh", require("./routes/refresh"));
+app.use("/logout", require("./routes/logout"));
+app.use("/resetpassword", require("./routes/resetPassword"));
 
 app.use(verifyJWT);
-//add routes which require authentication
-app.use("/changename", require("./routes/authentication/changeName"));
-app.use("/approveexperts", require("./routes/authentication/approveExperts"));
+app.use("/roles", require("./routes/roles"));
+app.use("/stats", require("./routes/stats"));
+app.use("/answers", require("./routes/api/answers"));
+app.use("/changename", require("./routes/api/changeName"));
+app.use("/approveexperts", require("./routes/approveExperts"));
+app.use("/qb", require("./routes/api/questionBank"));
+app.use("/question", require("./routes/api/question"));
+app.use("/quiz", require("./routes/api/quiz"));
 
 app.all("*", (req, res) => {
   res.status(404);

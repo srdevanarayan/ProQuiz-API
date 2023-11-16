@@ -1,10 +1,9 @@
-const User = require("../../model/User");
+const User = require("../model/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const handleLogin = async (req, res) => {
   const { user, pwd } = req.body;
-  //check for parameters
   if (!user || !pwd)
     return res
       .status(400)
@@ -12,13 +11,12 @@ const handleLogin = async (req, res) => {
 
   const foundUser = await User.findOne({ user: user }).exec();
   if (!foundUser) return res.sendStatus(401); //Unauthorized
-  //check if user is verified
+  // evaluate password
   if (foundUser.status === "unverified")
     return res.status(401).json({ message: "User not verified." });
-  // evaluate password
   const match = await bcrypt.compare(pwd, foundUser.password);
   if (match) {
-    const roles = foundUser.roles ? [foundUser.roles] : [];
+    const roles = Object.values(foundUser.roles).filter(Boolean);
     // create JWTs
     //console.log(process.env.RSA_PRIVATE_KEY.replace(/\\\\n/g, "\\n"));
     const accessToken = jwt.sign(

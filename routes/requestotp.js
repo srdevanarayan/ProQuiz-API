@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const request = require("../../controllers/authentication/requestOtpController");
+const request = require("../controllers/requestOtpController");
 
 router.post("/:user", request.sendOtp);
 router.post("/", (req, res) => {

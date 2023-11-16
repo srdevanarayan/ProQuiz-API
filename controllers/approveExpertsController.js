@@ -1,4 +1,4 @@
-const User = require("../../model/User");
+const User = require("../model/User");
 
 const approveExperts = async (req, res) => {
   if (!req.body.users)

@@ -15,52 +15,12 @@ const userSchema = new Schema({
     default: "unverified",
   },
   roles: {
-    User: {
-      type: Number,
-      default: 2001,
-    },
-    Expert: Number,
-    Admin: Number,
+    type: Number,
+    default: 2001,
   },
   password: {
     type: String,
     required: true,
-  },
-  rated: {
-    type: [String],
-    default: [],
-  },
-  reported: {
-    type: [String],
-    default: [],
-  },
-  verified: {
-    type: [String],
-    default: [],
-  },
-  contributed: {
-    type: [String],
-    default: [],
-  },
-  customquizcreated: {
-    type: [String],
-    default: [],
-  },
-  generalquizcreated: {
-    type: [String],
-    default: [],
-  },
-  customquizanswered: {
-    type: [String],
-    default: [],
-  },
-  generalquizanswered: {
-    type: [String],
-    default: [],
-  },
-  quiztobecompleted: {
-    type: [String],
-    default: [],
   },
 
   refreshToken: String,
